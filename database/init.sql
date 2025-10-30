@@ -1,11 +1,13 @@
-CREATE DATABASE IF NOT EXISTS monitoreo_inundaciones
+DROP DATABASE IF EXISTS monitoreo_inundaciones;
+
+CREATE DATABASE monitoreo_inundaciones
   CHARACTER SET = 'utf8mb4'
   COLLATE = 'utf8mb4_unicode_ci';
+
 USE monitoreo_inundaciones;
 
 SET sql_mode = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 SET time_zone = '+00:00';
-
 
 CREATE TABLE roles (
   id_rol TINYINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -85,7 +87,6 @@ CREATE TABLE refugios (
   INDEX idx_refugios_municipio (id_municipio)
 ) ENGINE=InnoDB;
 
-
 CREATE TABLE refugios_servicios_rel (
   id_rel INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_refugio INT UNSIGNED NOT NULL,
@@ -132,7 +133,6 @@ CREATE TABLE reportes_inundacion (
   INDEX idx_reportes_prioridad (prioridad)
 ) ENGINE=InnoDB;
 
-
 CREATE TABLE historico_reportes (
   id_historico BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_reporte BIGINT UNSIGNED NOT NULL,
@@ -145,4 +145,15 @@ CREATE TABLE historico_reportes (
     ON DELETE CASCADE ON UPDATE CASCADE,
   FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
     ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE zonas_riesgo (
+  id_zona INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  identificador VARCHAR(50) NOT NULL UNIQUE,
+  id_nivel TINYINT UNSIGNED NOT NULL,
+  poligono JSON NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_nivel) REFERENCES niveles_riesgo(id_nivel)
+    ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
