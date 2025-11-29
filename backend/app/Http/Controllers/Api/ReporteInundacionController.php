@@ -13,6 +13,12 @@ class ReporteInundacionController extends ApiController
         $reportes = ReporteInundacion::with(['usuario', 'municipio', 'estado'])->get();
         return $this->success($reportes);
     }
+    public function adminIndex()
+    {
+        $reportes = ReporteInundacion::latest()->paginate(15);
+
+        return view('reportes.admin-index', compact('reportes'));
+    }
 
     public function store(Request $request)
     {
@@ -22,9 +28,9 @@ class ReporteInundacionController extends ApiController
                 'id_municipio' => 'nullable|exists:municipios,id_municipio',
                 'estado_reporte_id' => 'required|exists:estados_reporte,id_estado',
                 'nivel_afectacion' => 'nullable|string|max:50',
-                'metodo_origen' => 'required|string|max:30',
-                'latitud' => 'required|numeric',
-                'longitud' => 'required|numeric',
+                'metodo_origen' => 'nullable|string|max:30',
+                'latitud' => 'nullable|numeric',
+                'longitud' => 'nullable|numeric',
                 'calle_principal' => 'nullable|string|max:150',
                 'colonia' => 'nullable|string|max:100',
                 'descripcion' => 'nullable|string',

@@ -1,8 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'Mapa de Refugios')
+@section('title', 'Mapa de Refugios y Zonas de Riesgo')
 
-@section('page-title', 'Mapa de Refugios')
+@section('page-title', 'Mapa de Refugios y Zonas de Riesgo')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('welcome') }}">Inicio</a></li>
@@ -12,10 +12,13 @@
 @section('content')
     <div class="card">
         <div class="card-header">
-            <h3 class="card-title">Mapa de Refugios</h3>
+            <h3 class="card-title">Mapa de Refugios y Zonas de Riesgo</h3>
             <div class="card-tools">
                 <button type="button" class="btn btn-primary btn-sm" id="btnMiUbicacion">
                     <i class="fas fa-location-arrow"></i> Mi Ubicación
+                </button>
+                <button type="button" class="btn btn-info btn-sm ml-2" id="btnOthonBlanco">
+                    <i class="fas fa-map-marker-alt"></i> Othón P. Blanco
                 </button>
             </div>
         </div>
@@ -23,14 +26,14 @@
             <!-- Filtros -->
             <div class="p-3 bg-light border-bottom">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="selectMunicipio">Filtrar por Municipio:</label>
                         <select id="selectMunicipio" class="form-control">
                             <option value="">Todos los municipios</option>
                             <!-- Se llenarán dinámicamente -->
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="selectEstado">Estado del Refugio:</label>
                         <select id="selectEstado" class="form-control">
                             <option value="">Todos los estados</option>
@@ -40,7 +43,14 @@
                             <option value="cerrado">Cerrado</option>
                         </select>
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
+                    <div class="col-md-3">
+                        <label for="toggleZonasRiesgo">Mostrar Zonas de Riesgo:</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="toggleZonasRiesgo" checked>
+                            <label class="form-check-label" for="toggleZonasRiesgo">Activar/Desactivar</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
                         <button type="button" class="btn btn-success btn-block" id="btnFiltrar">
                             <i class="fas fa-filter"></i> Aplicar Filtros
                         </button>
@@ -55,11 +65,20 @@
 
             <!-- Leyenda -->
             <div class="p-3 bg-light border-top">
-                <strong>Leyenda:</strong>
-                <span class="ml-3"><i class="fas fa-circle text-success"></i> Disponible</span>
-                <span class="ml-3"><i class="fas fa-circle text-warning"></i> Ocupado</span>
-                <span class="ml-3"><i class="fas fa-circle text-danger"></i> Lleno</span>
-                <span class="ml-3"><i class="fas fa-circle text-secondary"></i> Cerrado</span>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Leyenda Refugios:</strong>
+                        <span class="ml-3"><i class="fas fa-circle text-success"></i> Disponible</span>
+                        <span class="ml-3"><i class="fas fa-circle text-warning"></i> Ocupado</span>
+                        <span class="ml-3"><i class="fas fa-circle text-danger"></i> Lleno</span>
+                        <span class="ml-3"><i class="fas fa-circle text-secondary"></i> Cerrado</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Leyenda Zonas:</strong>
+                        <span class="ml-3"><i class="fas fa-square text-red" style="color: #ff4444;"></i> Alta Inundación</span>
+                        <span class="ml-3"><i class="fas fa-square text-orange" style="color: #ff8800;"></i> Media Inundación</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -82,17 +101,59 @@
 
 @push('scripts')
     <!-- Google Maps JS -->
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&libraries=places"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&libraries=places,geometry"></script>
 
     <script>
         let map;
         let markers = [];
         let refugiosData = [];
         let municipiosData = [];
-        let infoWindows = []; // Para cerrar ventanas anteriores
+        let infoWindows = [];
+        let zonasRiesgo = [];
+        let zonasRiesgoActivas = true;
 
         // Coordenadas por defecto (Chetumal, Quintana Roo)
         const DEFAULT_CENTER = { lat: 18.5001, lng: -88.2960 };
+        
+        // Coordenadas específicas para Othón P. Blanco
+        const OTHON_BLANCO_CENTER = { lat: 18.5001, lng: -88.2960 }; // Chetumal es la cabecera
+
+        // Zonas de riesgo de ejemplo para Othón P. Blanco
+        const ZONAS_RIESGO_OTHON = [
+            {
+                nombre: "Zona Centro - Alta Inundación",
+                tipo: "alta",
+                coordenadas: [
+                    { lat: 18.5050, lng: -88.3050 },
+                    { lat: 18.5080, lng: -88.3000 },
+                    { lat: 18.5020, lng: -88.2950 },
+                    { lat: 18.4980, lng: -88.3020 }
+                ],
+                descripcion: "Zona con historial de inundaciones severas"
+            },
+            {
+                nombre: "Colonia Bojorquez - Media Inundación", 
+                tipo: "media",
+                coordenadas: [
+                    { lat: 18.5150, lng: -88.3100 },
+                    { lat: 18.5180, lng: -88.3050 },
+                    { lat: 18.5120, lng: -88.3000 },
+                    { lat: 18.5080, lng: -88.3080 }
+                ],
+                descripcion: "Zona con inundaciones moderadas en temporada de lluvias"
+            },
+            {
+                nombre: "Río Hondo - Área Costeras",
+                tipo: "alta",
+                coordenadas: [
+                    { lat: 18.4900, lng: -88.3200 },
+                    { lat: 18.4950, lng: -88.3150 },
+                    { lat: 18.4850, lng: -88.3100 },
+                    { lat: 18.4800, lng: -88.3180 }
+                ],
+                descripcion: "Zona afectada por crecidas del Río Hondo"
+            }
+        ];
 
         // Inicializar mapa
         function initMap() {
@@ -102,12 +163,35 @@
                 mapTypeId: 'roadmap',
                 mapTypeControl: true,
                 streetViewControl: true,
-                fullscreenControl: true
+                fullscreenControl: true,
+                styles: [
+                    {
+                        "featureType": "administrative",
+                        "elementType": "geometry",
+                        "stylers": [{ "visibility": "off" }]
+                    },
+                    {
+                        "featureType": "poi",
+                        "stylers": [{ "visibility": "simplified" }]
+                    },
+                    {
+                        "featureType": "road",
+                        "elementType": "labels.icon",
+                        "stylers": [{ "visibility": "off" }]
+                    },
+                    {
+                        "featureType": "transit",
+                        "stylers": [{ "visibility": "off" }]
+                    }
+                ]
             });
 
             // Cargar datos
             cargarMunicipios();
             cargarRefugios();
+            
+            // Dibujar zonas de riesgo iniciales
+            dibujarZonasRiesgo();
         }
 
         // Cargar municipios para el selector
@@ -131,7 +215,6 @@
                     municipiosData = Array.from(municipiosMap.values());
                     
                     const select = document.getElementById('selectMunicipio');
-                    // Limpiar opciones previas (excepto "Todos")
                     select.innerHTML = '<option value="">Todos los municipios</option>';
                     
                     municipiosData.forEach(municipio => {
@@ -159,6 +242,50 @@
                 });
         }
 
+        // Dibujar zonas de riesgo en el mapa
+        function dibujarZonasRiesgo() {
+            // Limpiar zonas anteriores
+            zonasRiesgo.forEach(zona => zona.setMap(null));
+            zonasRiesgo = [];
+
+            if (!zonasRiesgoActivas) return;
+
+            ZONAS_RIESGO_OTHON.forEach(zona => {
+                const polygon = new google.maps.Polygon({
+                    paths: zona.coordenadas,
+                    strokeColor: zona.tipo === 'alta' ? '#FF4444' : '#FF8800',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: zona.tipo === 'alta' ? '#FF4444' : '#FF8800',
+                    fillOpacity: 0.35,
+                    map: map,
+                    title: zona.nombre
+                });
+
+                // InfoWindow para la zona de riesgo
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div style="max-width: 250px; padding: 10px;">
+                            <h6 style="margin-bottom: 8px; color: #333; font-weight: bold;">${zona.nombre}</h6>
+                            <p style="margin: 3px 0; font-size: 13px;"><strong>Tipo:</strong> 
+                                <span style="color: ${zona.tipo === 'alta' ? '#FF4444' : '#FF8800'}; font-weight: bold;">
+                                    ${zona.tipo === 'alta' ? 'Alta Inundación' : 'Media Inundación'}
+                                </span>
+                            </p>
+                            <p style="margin: 3px 0; font-size: 13px;">${zona.descripcion}</p>
+                        </div>
+                    `
+                });
+
+                polygon.addListener('click', function(event) {
+                    infoWindow.setPosition(event.latLng);
+                    infoWindow.open(map);
+                });
+
+                zonasRiesgo.push(polygon);
+            });
+        }
+
         // Mostrar refugios en el mapa
         function mostrarRefugiosEnMapa(refugios, filtros = {}) {
             // Limpiar marcadores anteriores
@@ -176,7 +303,6 @@
                 refugiosFiltrados = refugiosFiltrados.filter(r => 
                     r.id_municipio == filtros.municipio
                 );
-                console.log('Filtrado por municipio:', refugiosFiltrados.length);
             }
             
             if (filtros.estado) {
@@ -184,10 +310,9 @@
                     const codigo = r.estado?.codigo?.toLowerCase();
                     return codigo === filtros.estado.toLowerCase();
                 });
-                console.log('Filtrado por estado:', refugiosFiltrados.length);
             }
 
-            // Crear marcadores
+            // Crear marcadores - TODOS VERDES como solicitaste
             refugiosFiltrados.forEach(refugio => {
                 if (refugio.latitud && refugio.longitud) {
                     const marker = crearMarcador(refugio);
@@ -195,52 +320,30 @@
                 }
             });
 
-            console.log('Marcadores creados:', markers.length);
-
             // Ajustar zoom para mostrar todos los marcadores
             if (markers.length > 0) {
                 const bounds = new google.maps.LatLngBounds();
                 markers.forEach(marker => bounds.extend(marker.getPosition()));
                 map.fitBounds(bounds);
                 
-                // Evitar zoom excesivo si hay solo un marcador
                 google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
                     if (this.getZoom() > 15) {
                         this.setZoom(15);
                     }
                 });
             } else {
-                // Si no hay marcadores, volver al centro por defecto
                 map.setCenter(DEFAULT_CENTER);
                 map.setZoom(12);
-                alert('No se encontraron refugios con los filtros seleccionados');
             }
         }
 
-        // Crear marcador personalizado
+        // Crear marcador personalizado - SIEMPRE VERDE
         function crearMarcador(refugio) {
-            const estadoCodigo = refugio.estado?.codigo?.toLowerCase() || 'desconocido';
             const disponible = refugio.capacidad_total - (refugio.capacidad_actual || 0);
             
-            // Color del marcador según estado
-            let iconColor = 'blue';
-            switch(estadoCodigo) {
-                case 'disponible':
-                    iconColor = '#28a745'; // Verde Bootstrap
-                    break;
-                case 'ocupado':
-                    iconColor = '#ffc107'; // Amarillo Bootstrap
-                    break;
-                case 'lleno':
-                    iconColor = '#dc3545'; // Rojo Bootstrap
-                    break;
-                case 'cerrado':
-                case 'mantenimiento':
-                    iconColor = '#6c757d'; // Gris Bootstrap
-                    break;
-            }
+            // TODOS LOS REFUGIOS EN VERDE como solicitaste
+            const iconColor = '#28a745'; // Verde fijo para todos
 
-            // Crear marcador con icono personalizado
             const marker = new google.maps.Marker({
                 position: { lat: parseFloat(refugio.latitud), lng: parseFloat(refugio.longitud) },
                 map: map,
@@ -256,7 +359,6 @@
                 animation: google.maps.Animation.DROP
             });
 
-            // Contenido del InfoWindow
             const infoContent = `
                 <div style="max-width: 300px; padding: 10px;">
                     <h5 style="margin-bottom: 10px; color: #333; font-weight: bold;">${refugio.nombre}</h5>
@@ -287,7 +389,6 @@
             infoWindows.push(infoWindow);
 
             marker.addListener('click', function() {
-                // Cerrar todas las ventanas anteriores
                 infoWindows.forEach(iw => iw.close());
                 infoWindow.open(map, marker);
             });
@@ -306,7 +407,6 @@
                     map.setCenter(pos);
                     map.setZoom(14);
                     
-                    // Marcador de ubicación actual
                     new google.maps.Marker({
                         position: pos,
                         map: map,
@@ -328,6 +428,15 @@
             }
         });
 
+        // Botón: Othón P. Blanco
+        document.getElementById('btnOthonBlanco').addEventListener('click', function() {
+            map.setCenter(OTHON_BLANCO_CENTER);
+            map.setZoom(13);
+            
+            // Resaltar zonas de riesgo de Othón P. Blanco
+            dibujarZonasRiesgo();
+        });
+
         // Botón: Aplicar Filtros
         document.getElementById('btnFiltrar').addEventListener('click', function() {
             const filtros = {
@@ -335,8 +444,18 @@
                 estado: document.getElementById('selectEstado').value
             };
             
-            console.log('Aplicando filtros:', filtros);
             mostrarRefugiosEnMapa(refugiosData, filtros);
+        });
+
+        // Toggle Zonas de Riesgo
+        document.getElementById('toggleZonasRiesgo').addEventListener('change', function() {
+            zonasRiesgoActivas = this.checked;
+            if (zonasRiesgoActivas) {
+                dibujarZonasRiesgo();
+            } else {
+                zonasRiesgo.forEach(zona => zona.setMap(null));
+                zonasRiesgo = [];
+            }
         });
 
         // Inicializar cuando se cargue la página

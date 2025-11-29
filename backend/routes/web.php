@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\ReporteInundacionController;
+use App\Http\Controllers\ReporteInundacionController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\MapaController;
@@ -34,18 +34,11 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-  Route::get('/reportes', [ReporteInundacionController::class, 'index'])->name('reportes.index');
-    Route::get('/reportes/crear', [ReporteInundacionController::class, 'create'])->name('reportes.create');
-    Route::post('/reportes', [ReporteInundacionController::class, 'store'])->name('reportes.store');
-    Route::get('/reportes/{id}', [ReporteInundacionController::class, 'show'])->name('reportes.show');
+    Route::get('/mis-reportes', [ReporteInundacionController::class, 'index'])->name('reportes.index');
+    Route::get('/mis-reportes/crear', [ReporteInundacionController::class, 'create'])->name('reportes.create');
+    Route::post('/mis-reportes', [ReporteInundacionController::class, 'store'])->name('reportes.store');
+    Route::get('/mis-reportes/{id}', [ReporteInundacionController::class, 'show'])->name('reportes.show');
     
-    // Logout
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
-Route::prefix('api')->group(function () {
-    Route::apiResource('zonas-riesgo', \App\Http\Controllers\Api\ZonaRiesgoController::class);
-    Route::apiResource('reportes', \App\Http\Controllers\Api\ReporteInundacionController::class);
-    Route::apiResource('refugios', \App\Http\Controllers\Api\RefugioController::class);
-    Route::apiResource('usuarios', \App\Http\Controllers\Api\UsuarioController::class)->only(['index', 'show']);
-});

@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\RefugioController;
 use App\Http\Controllers\Api\UsuarioController;
 
 Route::apiResource('zonas-riesgo', ZonaRiesgoController::class);
-Route::apiResource('reportes', ReporteInundacionController::class);
+Route::apiResource('reportes-inundaciones', ReporteInundacionController::class); // CAMBIADO
 Route::apiResource('refugios', RefugioController::class);
 Route::apiResource('usuarios', UsuarioController::class)->only(['index', 'show']);
 

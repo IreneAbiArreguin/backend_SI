@@ -121,16 +121,22 @@
                     </li>
                     
                     @auth
-                    <!-- Opciones solo para usuarios autenticados -->
-                   <li class="nav-item">
-                        <a href="{{ Auth::check() ? route('reportes.index') : route('login') }}" 
-                        class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}">
-                            <i class="fa-solid fa-pencil"></i>
-                            <p>{{ Auth::check() ? 'Mis Reportes' : 'Reportes' }}</p>
-                        </a>
-                    </li>
+                        @if(auth()->user()->es_admin) 
+                            <li class="nav-item">
+                                <a href="{{ route('admin.reportes') }}" class="nav-link {{ request()->routeIs('admin.reportes*') ? 'active' : '' }}">
+                                    <i class="fa-solid fa-list"></i>
+                                    <p>Todos los Reportes</p>
+                                </a>
+                            </li>
+                        @else
+                            <li class="nav-item">
+                                <a href="{{ route('reportes.index') }}" class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}">                                    <i class="fa-solid fa-pencil"></i>
+                                    <p>Reportes</p>
+                                </a>
+                            </li>
+                        @endif
                     @endauth
-                    
+                                    
                     <li class="nav-item">
                         <a href="{{ route('informacion') }}" class="nav-link">
                             <i class="fa-solid fa-circle-info"></i>

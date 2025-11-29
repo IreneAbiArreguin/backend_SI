@@ -1,208 +1,421 @@
 @extends('layouts.admin')
 
-@section('title', 'Reportes')
+@section('title', 'Mis Reportes de Inundación')
 
-@section('page-title', 'Reportes - Yáanal Ha\'')
+@section('page-title', 'Mis Reportes')
 
 @section('breadcrumb')
-    <li class="breadcrumb-item"><a href="{{ route('welcome') }}">Inicio</a></li>
-    <li class="breadcrumb-item active">Reportes</li>
+    <li class="breadcrumb-item"><a href="{{ route('mapa') }}">Inicio</a></li>
+    <li class="breadcrumb-item active">Mis Reportes</li>
 @endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <!-- Card para crear nuevo reporte -->
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-plus-circle mr-2"></i>
-                        Crear Nuevo Reporte
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <a href="{{ route('reportes.create') }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-plus mr-2"></i>Reportar Inundación
-                    </a>
-                    <small class="text-muted d-block mt-2">
-                        Reporta situaciones de inundación en tu comunidad para ayudar a las autoridades.
-                    </small>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Mis Reportes de Inundación</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalCrearReporte">
+                        <i class="fas fa-plus"></i> Nuevo Reporte
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm ml-2" onclick="cargarReportes()">
+                        <i class="fas fa-sync-alt"></i> Recargar
+                    </button>
                 </div>
             </div>
 
-            <!-- Lista de reportes del usuario -->
-            <div class="card card-info">
-                <div class="card-header">
-                    <h3 class="card-title">
-                        <i class="fas fa-list mr-2"></i>
-                        Mis Reportes
-                    </h3>
+            <div class="card-body">
+                <!-- Loading -->
+                <div id="loading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Cargando tus reportes...</p>
                 </div>
-                <div class="card-body">
-                    @if($reportes->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>Fecha del Suceso</th>
-                                        <th>Ubicación</th>
-                                        <th>Nivel Afectación</th>
-                                        <th>Prioridad</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($reportes as $reporte)
-                                        <tr>
-                                            <td>
-                                                <i class="far fa-calendar-alt mr-1"></i>
-                                                {{ \Carbon\Carbon::parse($reporte->fecha_suceso)->format('d/m/Y H:i') }}
-                                            </td>
-                                            <td>
-                                                <i class="fas fa-map-marker-alt mr-1"></i>
-                                                {{ $reporte->calle_principal ?: 'Ubicación no especificada' }}
-                                                @if($reporte->colonia)
-                                                    <br><small class="text-muted">{{ $reporte->colonia }}</small>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($reporte->nivel_afectacion)
-                                                    <span class="badge 
-                                                        @if($reporte->nivel_afectacion == 'bajo') badge-success
-                                                        @elseif($reporte->nivel_afectacion == 'medio') badge-warning
-                                                        @elseif($reporte->nivel_afectacion == 'alto') badge-danger
-                                                        @else badge-secondary @endif">
-                                                        {{ ucfirst($reporte->nivel_afectacion) }}
-                                                    </span>
-                                                @else
-                                                    <span class="badge badge-secondary">No especificado</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($reporte->prioridad == 1)
-                                                    <span class="badge badge-danger">Alta</span>
-                                                @elseif($reporte->prioridad == 2)
-                                                    <span class="badge badge-warning">Media</span>
-                                                @else
-                                                    <span class="badge badge-info">Baja</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if($reporte->estado_reporte_id == 1)
-                                                    <span class="badge badge-success">Activo</span>
-                                                @elseif($reporte->estado_reporte_id == 2)
-                                                    <span class="badge badge-warning">En Proceso</span>
-                                                @elseif($reporte->estado_reporte_id == 3)
-                                                    <span class="badge badge-secondary">Resuelto</span>
-                                                @else
-                                                    <span class="badge badge-info">Pendiente</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <a href="{{ route('reportes.show', $reporte->id_reporte) }}" 
-                                                   class="btn btn-info btn-sm"
-                                                   title="Ver detalles">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                @if($reporte->estado_reporte_id == 1)
-                                                    <button class="btn btn-warning btn-sm" title="Editar">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- Paginación -->
-                        <div class="d-flex justify-content-center mt-3">
-                            {{ $reportes->links() }}
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">No tienes reportes registrados</h5>
-                            <p class="text-muted">Crea tu primer reporte de inundación para comenzar.</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
 
-            <!-- Estadísticas rápidas -->
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="small-box bg-info">
-                        <div class="inner">
-                            <h3>{{ $reportes->count() }}</h3>
-                            <p>Total Reportes</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                    </div>
+                <!-- Error -->
+                <div id="error" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span id="errorMessage"></span>
                 </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-warning">
-                        <div class="inner">
-                            <h3>{{ $reportes->where('estado_reporte_id', 1)->count() }}</h3>
-                            <p>Reportes Activos</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
+
+                <!-- Tabla -->
+                <div id="tablaReportes" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Fecha</th>
+                                    <th>Ubicación</th>
+                                    <th>Nivel Afectación</th>
+                                    <th>Prioridad</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportesBody"></tbody>
+                        </table>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-success">
-                        <div class="inner">
-                            <h3>{{ $reportes->where('estado_reporte_id', 3)->count() }}</h3>
-                            <p>Resueltos</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-danger">
-                        <div class="inner">
-                            <h3>{{ $reportes->where('prioridad', 1)->count() }}</h3>
-                            <p>Alta Prioridad</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-flag"></i>
-                        </div>
+
+                    <div id="noData" class="text-center py-5" style="display: none;">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Aún no has creado ningún reporte</p>
+                        <button class="btn btn-success mt-3" data-toggle="modal" data-target="#modalCrearReporte">
+                            <i class="fas fa-plus"></i> Crear mi primer reporte
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal Crear Reporte -->
+<div class="modal fade" id="modalCrearReporte">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="formCrearReporte">
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title">Reportar Inundación</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Calle Principal *</label>
+                                <input type="text" name="calle_principal" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Entre calles (opcional)</label>
+                                <input type="text" name="cruzamiento1" class="form-control" placeholder="Calle 1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <input type="text" name="cruzamiento2" class="form-control" placeholder="Calle 2">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Colonia *</label>
+                                <input type="text" name="colonia" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nivel de Afectación *</label>
+                                <select name="nivel_afectacion" class="form-control" required>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Leve">Leve (agua en calle)</option>
+                                    <option value="Moderada">Moderada (ingreso a viviendas)</option>
+                                    <option value="Severa">Severa (imposible transitar)</option>
+                                    <option value="Crítica">Crítica (personas atrapadas)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Prioridad (según tu percepción)</label>
+                                <select name="prioridad" class="form-control">
+                                    <option value="3">Baja</option>
+                                    <option value="2" selected>Media</option>
+                                    <option value="1">Alta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label>Descripción detallada (opcional)</label>
+                                <textarea name="descripcion" class="form-control" rows="3" placeholder="Ej: El agua llega a las rodillas, hay vehículos varados..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <p class="text-muted"><small>
+                                <i class="fas fa-info-circle"></i> 
+                                Para desarrollo: Usaremos coordenadas de prueba para agilizar el proceso
+                            </small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane"></i> Enviar Reporte
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
-@section('styles')
-<style>
-    .small-box {
-        border-radius: 0.25rem;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        margin-bottom: 1rem;
+@push('scripts')
+<script>
+    const API_GET_URL = '/api/reportes-inundaciones';
+    const API_POST_URL = '/api/reportes-inundaciones';
+    
+    // ⚡ COORDENADAS POR DEFECTO PARA DESARROLLO (Mérida centro)
+    const COORDENADAS_DEFAULT = { 
+        lat: 20.967370, 
+        lng: -89.623678,
+        fuente: 'desarrollo'
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarReportes();
+    });
+
+    function cargarReportes() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('tablaReportes').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+
+        fetch(API_GET_URL)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(res => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('tablaReportes').style.display = 'block';
+
+                const reportes = res.data || res;
+
+                if (!reportes || reportes.length === 0) {
+                    document.getElementById('noData').style.display = 'block';
+                    document.getElementById('reportesBody').innerHTML = '';
+                    return;
+                }
+
+                document.getElementById('noData').style.display = 'none';
+                mostrarReportes(reportes);
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('errorMessage').textContent = 'Error al cargar tus reportes: ' + err.message;
+                console.error('Error:', err);
+            });
     }
-    .small-box .inner {
-        padding: 10px;
+
+    function mostrarReportes(reportes) {
+        const tbody = document.getElementById('reportesBody');
+        tbody.innerHTML = '';
+
+        reportes.forEach(r => {
+            const prioridadBadge = r.prioridad == 1 ? 'badge-danger' : r.prioridad == 2 ? 'badge-warning' : 'badge-success';
+            const prioridadTexto = r.prioridad == 1 ? 'Alta' : r.prioridad == 2 ? 'Media' : 'Baja';
+
+            const estadoBadge = r.estado_reporte?.nombre?.toLowerCase().includes('pendiente') ? 'badge-warning' :
+                               r.estado_reporte?.nombre?.toLowerCase().includes('verificado') ? 'badge-success' :
+                               r.estado_reporte?.nombre?.toLowerCase().includes('rechazado') ? 'badge-danger' : 'badge-info';
+
+            const ubicacion = [r.calle_principal, r.colonia].filter(Boolean).join(', ') || 'Sin ubicación';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>#${r.id_reporte}</td>
+                <td>${new Date(r.fecha_suceso || r.created_at).toLocaleString('es-MX')}</td>
+                <td>${ubicacion}</td>
+                <td>${r.nivel_afectacion || 'No especificado'}</td>
+                <td><span class="badge ${prioridadBadge}">${prioridadTexto}</span></td>
+                <td><span class="badge ${estadoBadge}">${r.estado_reporte?.nombre || 'Pendiente'}</span></td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="verDetalle(${r.id_reporte})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
-    .small-box .icon {
-        transition: all 0.3s ease;
+
+    // ⚡ IMPLEMENTACIÓN OPTIMIZADA - MÁS RÁPIDA
+    document.getElementById('formCrearReporte').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const calle = this.querySelector('[name="calle_principal"]').value;
+        const colonia = this.querySelector('[name="colonia"]').value;
+        
+        if (!calle || !colonia) {
+            Swal.fire('Error', 'Por favor ingresa calle principal y colonia', 'error');
+            return;
+        }
+
+        // Mostrar loading inmediatamente
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+        submitBtn.disabled = true;
+
+        // ⚡ ESTRATEGIA RÁPIDA: Usar coordenadas por defecto inmediatamente
+        // Para desarrollo, comentar esta línea si quieres usar geolocalización real
+        usarCoordenadasRapidas(calle, colonia, this, submitBtn, originalText);
+        
+        // ⚡ Para producción, descomenta esta línea:
+        // obtenerUbicacionOptimizada(calle, colonia, this, submitBtn, originalText);
+    });
+
+    // ⚡ MÉTODO RÁPIDO: Coordenadas por defecto (instantáneo)
+    function usarCoordenadasRapidas(calle, colonia, form, submitBtn, originalText) {
+        console.log('⚡ Usando coordenadas rápidas para desarrollo');
+        
+        // Pequeño delay para simular procesamiento (opcional)
+        setTimeout(() => {
+            enviarReporteConCoordenadas(COORDENADAS_DEFAULT, form, submitBtn, originalText);
+        }, 500);
     }
-    .small-box:hover .icon {
-        transform: scale(1.1);
+
+    // ⚡ MÉTODO OPTIMIZADO: Para producción
+    function obtenerUbicacionOptimizada(calle, colonia, form, submitBtn, originalText) {
+        // Intentar geolocalización RÁPIDA primero
+        obtenerUbicacionRapida()
+            .then(position => {
+                enviarReporteConCoordenadas({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    fuente: 'geolocalización'
+                }, form, submitBtn, originalText);
+            })
+            .catch(() => {
+                // Si falla, usar geocoding con timeout
+                geocodeAddressRapido(calle + ', ' + colonia, form, submitBtn, originalText);
+            });
     }
-    .table th {
-        border-top: none;
-        font-weight: 600;
+
+    // ⚡ GEOLOCALIZACIÓN RÁPIDA
+    function obtenerUbicacionRapida() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocalización no soportada'));
+                return;
+            }
+
+            // ⚡ Configuración rápida
+            const options = {
+                timeout: 3000,           // Solo 3 segundos
+                maximumAge: 300000,      // Cache de 5 minutos
+                enableHighAccuracy: false // Más rápido
+            };
+
+            navigator.geolocation.getCurrentPosition(resolve, reject, options);
+        });
     }
-</style>
-@endsection
+
+    // ⚡ GEOCODING RÁPIDO CON TIMEOUT
+    function geocodeAddressRapido(direccion, form, submitBtn, originalText) {
+        const loadingAlert = Swal.fire({
+            title: 'Buscando ubicación...',
+            html: `
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3"></div>
+                    <p class="mb-1"><strong>${direccion}</strong></p>
+                    <small class="text-muted">Usando servicio de mapas</small>
+                </div>
+            `,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            timer: 5000 // Auto-cierre en 5 segundos
+        });
+
+        // ⚡ Timeout más corto
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Tiempo agotado')), 5000)
+        );
+
+        const geocodingPromise = fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion + ', Yucatán, México')}&limit=1`
+        ).then(response => response.json());
+
+        Promise.race([geocodingPromise, timeoutPromise])
+            .then(data => {
+                loadingAlert.then(alert => alert.close());
+                
+                if (data && data.length > 0) {
+                    enviarReporteConCoordenadas({
+                        lat: parseFloat(data[0].lat),
+                        lng: parseFloat(data[0].lon),
+                        fuente: 'geocoding'
+                    }, form, submitBtn, originalText);
+                } else {
+                    // ⚡ Fallback a coordenadas por defecto
+                    console.log('Geocoding falló, usando coordenadas por defecto');
+                    enviarReporteConCoordenadas(COORDENADAS_DEFAULT, form, submitBtn, originalText);
+                }
+            })
+            .catch(error => {
+                loadingAlert.then(alert => alert.close());
+                console.log('Error en geocoding:', error);
+                // ⚡ Fallback a coordenadas por defecto
+                enviarReporteConCoordenadas(COORDENADAS_DEFAULT, form, submitBtn, originalText);
+            });
+    }
+
+    // ⚡ FUNCIÓN PARA ENVIAR REPORTE (optimizada)
+    function enviarReporteConCoordenadas(coords, form, submitBtn, originalText) {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        
+        const formData = new FormData(form);
+        formData.append('latitud', coords.lat);
+        formData.append('longitud', coords.lng);
+        formData.append('metodo_origen', 'web_usuario');
+        formData.append('fuente_ubicacion', coords.fuente);
+
+        fetch(API_POST_URL, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en el servidor: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(res => {
+            // Restaurar botón
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+
+            if (res.success) {
+                $('#modalCrearReporte').modal('hide');
+                form.reset();
+                cargarReportes();
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Reporte enviado!',
+                    text: `Ubicación obtenida por: ${coords.fuente}`,
+                    confirmButtonText: 'Aceptar',
+                    timer: 3000
+                });
+            } else {
+                Swal.fire('Error', res.message || 'No se pudo enviar el reporte', 'error');
+            }
+        })
+        .catch((error) => {
+            // Restaurar botón
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            
+            console.error('Error:', error);
+            Swal.fire('Error', 'Error de conexión: ' + error.message, 'error');
+        });
+    }
+
+    function verDetalle(id) {
+        window.location.href = '/mis-reportes/' + id;
+    }
+
+    console.log('🔧 Modo: DESARROLLO - Usando coordenadas rápidas');
+    console.log('📍 Coordenadas por defecto:', COORDENADAS_DEFAULT);
+    console.log('💡 Para producción, cambiar a obtenerUbicacionOptimizada()');
+</script>
+@endpush
