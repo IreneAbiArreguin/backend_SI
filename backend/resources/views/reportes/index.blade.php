@@ -150,9 +150,30 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para ver detalles del reporte -->
+<div class="modal fade" id="modalDetallesReporte" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">Detalles del Reporte</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="detallesReporteBody">
+                <!-- Aquí se cargarán los detalles -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     const API_GET_URL = '/api/reportes-inundaciones';
     const API_POST_URL = '/api/reportes-inundaciones';
@@ -365,6 +386,7 @@
         formData.append('longitud', coords.lng);
         formData.append('metodo_origen', 'web_usuario');
         formData.append('fuente_ubicacion', coords.fuente);
+        formData.append('estado_reporte_id', 1);
 
         fetch(API_POST_URL, {
             method: 'POST',
@@ -410,8 +432,77 @@
         });
     }
 
+        // Función para ver detalles de un reporte en modal
     function verDetalle(id) {
-        window.location.href = '/mis-reportes/' + id;
+        fetch(`${API_GET_URL}/${id}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Error al cargar el reporte');
+                return response.json();
+            })
+            .then(res => {
+                const reporte = res.data || res;
+                
+                // Formatear fecha
+                const fecha = reporte.fecha_suceso || reporte.created_at;
+                const fechaFormateada = new Date(fecha).toLocaleString('es-MX');
+                
+                // Estado del reporte
+                const estado = reporte.estado_reporte?.nombre || 'Pendiente';
+                let estadoBadge = 'badge-info';
+                if (estado.toLowerCase().includes('pendiente')) estadoBadge = 'badge-warning';
+                else if (estado.toLowerCase().includes('verificado')) estadoBadge = 'badge-success';
+                else if (estado.toLowerCase().includes('rechazado')) estadoBadge = 'badge-danger';
+                
+                // Nivel de afectación
+                const nivel = reporte.nivel_afectacion || 'No especificado';
+                
+                // Prioridad
+                const prioridadTexto = reporte.prioridad == 1 ? 'Alta' : 
+                                    reporte.prioridad == 2 ? 'Media' : 'Baja';
+                const prioridadBadge = reporte.prioridad == 1 ? 'badge-danger' : 
+                                    reporte.prioridad == 2 ? 'badge-warning' : 'badge-success';
+                
+                // Ubicación
+                const ubicacion = [reporte.calle_principal, reporte.colonia].filter(Boolean).join(', ') || 'Sin ubicación';
+                
+                // Coordenadas
+                const coordenadas = reporte.latitud && reporte.longitud ? 
+                    `<p><strong>Coordenadas:</strong> ${reporte.latitud}, ${reporte.longitud}</p>
+                    <a href="https://www.google.com/maps?q=${reporte.latitud},${reporte.longitud}" 
+                        target="_blank" class="btn btn-sm btn-success">
+                        <i class="fas fa-map-marker-alt"></i> Ver en Google Maps
+                    </a>` : '';
+                
+                document.getElementById('detallesReporteBody').innerHTML = `
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Reporte #${reporte.id_reporte}</h5>
+                            <hr>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha:</strong> ${fechaFormateada}</p>
+                            <p><strong>Ubicación:</strong> ${ubicacion}</p>
+                            <p><strong>Nivel Afectación:</strong> ${nivel}</p>
+                            <p><strong>Prioridad:</strong> <span class="badge ${prioridadBadge}">${prioridadTexto}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Estado:</strong> <span class="badge ${estadoBadge}">${estado}</span></p>
+                            <p><strong>Método Origen:</strong> ${reporte.metodo_origen || 'N/A'}</p>
+                            <p><strong>Fuente Ubicación:</strong> ${reporte.fuente_ubicacion || 'N/A'}</p>
+                        </div>
+                        <div class="col-12 mt-3">
+                            <p><strong>Descripción:</strong></p>
+                            <p>${reporte.descripcion || '<em>Sin descripción</em>'}</p>
+                        </div>
+                        ${coordenadas}
+                    </div>
+                `;
+                $('#modalDetallesReporte').modal('show');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'No se pudieron cargar los detalles del reporte', 'error');
+            });
     }
 
     console.log('🔧 Modo: DESARROLLO - Usando coordenadas rápidas');

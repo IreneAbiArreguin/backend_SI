@@ -34,7 +34,7 @@ class ReporteInundacion extends Model
 
     public function estado()
     {
-        return $this->belongsTo(EstadoReporte::class, 'estado_reporte_id', 'id_estado');
+        return $this->belongsTo(EstadoReporte::class, 'estado_reporte_id', 'id_estado_reporte');
     }
 
     public function verificadoPor()

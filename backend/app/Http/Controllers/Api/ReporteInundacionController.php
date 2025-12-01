@@ -26,7 +26,7 @@ class ReporteInundacionController extends ApiController
             $request->validate([
                 'id_usuario' => 'nullable|exists:usuarios,id_usuario',
                 'id_municipio' => 'nullable|exists:municipios,id_municipio',
-                'estado_reporte_id' => 'required|exists:estados_reporte,id_estado',
+                'estado_reporte_id' => 'required|exists:estados_reporte,id_estado_reporte',
                 'nivel_afectacion' => 'nullable|string|max:50',
                 'metodo_origen' => 'nullable|string|max:30',
                 'latitud' => 'nullable|numeric',
@@ -43,9 +43,10 @@ class ReporteInundacionController extends ApiController
         }
     }
 
-    public function show(ReporteInundacion $reporte)
+    public function show($id)
     {
-        $reporte->load(['usuario', 'municipio', 'estado', 'verificadoPor']);
+        $reporte = ReporteInundacion::with(['usuario', 'municipio', 'estado', 'verificadoPor'])
+            ->findOrFail($id);
         return $this->success($reporte);
     }
 
@@ -53,7 +54,7 @@ class ReporteInundacionController extends ApiController
     {
         try {
             $request->validate([
-                'estado_reporte_id' => 'sometimes|exists:estados_reporte,id_estado',
+                'estado_reporte_id' => 'required|exists:estados_reporte,id_estado_reporte',
                 'verificado_por' => 'nullable|exists:usuarios,id_usuario',
                 'descripcion' => 'sometimes|string',
             ]);

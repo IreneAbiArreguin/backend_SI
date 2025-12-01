@@ -27,7 +27,8 @@ class ReporteInundacionController extends Controller
 
     public function show($id)
     {
-        // Mostrar un reporte específico
-        return view('reportes.show', compact('id'));
+        $reporte = ReporteInundacion::with(['usuario', 'municipio', 'estado', 'verificadoPor'])
+            ->findOrFail($id);
+        return $this->success($reporte);
     }
 }
