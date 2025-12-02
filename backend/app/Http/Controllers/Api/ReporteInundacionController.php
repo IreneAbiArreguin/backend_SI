@@ -34,6 +34,7 @@ class ReporteInundacionController extends ApiController
                 'calle_principal' => 'nullable|string|max:150',
                 'colonia' => 'nullable|string|max:100',
                 'descripcion' => 'nullable|string',
+                'prioridad' => 'nullable|integer|in:1,2,3',
             ]);
 
             $reporte = ReporteInundacion::create($request->all());
@@ -71,4 +72,8 @@ class ReporteInundacionController extends ApiController
         $reporte->delete();
         return $this->success(null, 'Reporte eliminado');
     }
+
+    
+   
+
 }

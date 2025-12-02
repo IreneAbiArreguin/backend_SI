@@ -1,12 +1,14 @@
 @extends('layouts.admin')
 
-@section('title', 'Mis Reportes de Inundación')
+@section('title', 'Levantar Reporte')
 
-@section('page-title', 'Mis Reportes')
+@section('page-title', 'Levantar Reporte')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('mapa') }}">Inicio</a></li>
-    <li class="breadcrumb-item active">Mis Reportes</li>
+    <li class="breadcrumb-item"><a href="{{ route('reportes.index') }}">Reportes</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('reportes.verReportes') }}">Ver mis Reportes</a></li>
+  
 @endsection
 
 @section('content')
@@ -14,499 +16,638 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Mis Reportes de Inundación</h3>
+                <h3 class="card-title">Formulario de Reporte</h3>
                 <div class="card-tools">
-                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalCrearReporte">
-                        <i class="fas fa-plus"></i> Nuevo Reporte
-                    </button>
-                    <button type="button" class="btn btn-primary btn-sm ml-2" onclick="cargarReportes()">
-                        <i class="fas fa-sync-alt"></i> Recargar
-                    </button>
+                    <a href="{{ route('reportes.index') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
                 </div>
             </div>
-
-            <div class="card-body">
-                <!-- Loading -->
-                <div id="loading" class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2">Cargando tus reportes...</p>
+            
+            <div class="card-body p-0">
+                <!-- Stepper Header -->
+                <div class="stepper-header bg-white p-4 border-bottom">
+                    <div class="stepper-progress-container position-relative">
+                        <!-- Barra de progreso -->
+                        <div class="stepper-track"></div>
+                        <div class="stepper-progress" id="stepperProgress"></div>
+                        
+                        <!-- Círculos de pasos -->
+                        <div class="stepper-steps">
+                            <div class="stepper-step active" data-step="1">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">1</span>
+                                    <i class="fas fa-check stepper-check"></i>
+                                </div>
+                                <div class="stepper-label">Tipo</div>
+                            </div>
+                            <div class="stepper-step" data-step="2">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">2</span>
+                                    <i class="fas fa-check stepper-check"></i>
+                                </div>
+                                <div class="stepper-label">Ubicación</div>
+                            </div>
+                            <div class="stepper-step" data-step="3">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">3</span>
+                                    <i class="fas fa-check stepper-check"></i>
+                                </div>
+                                <div class="stepper-label">Detalles</div>
+                            </div>
+                            <div class="stepper-step" data-step="4">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">4</span>
+                                    <i class="fas fa-check stepper-check"></i>
+                                </div>
+                                <div class="stepper-label">Evidencia</div>
+                            </div>
+                            <div class="stepper-step" data-step="5">
+                                <div class="stepper-circle">
+                                    <span class="stepper-number">5</span>
+                                    <i class="fas fa-check stepper-check"></i>
+                                </div>
+                                <div class="stepper-label">Confirmar</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Error -->
-                <div id="error" class="alert alert-danger" style="display: none;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span id="errorMessage"></span>
-                </div>
-
-                <!-- Tabla -->
-                <div id="tablaReportes" style="display: none;">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Fecha</th>
-                                    <th>Ubicación</th>
-                                    <th>Nivel Afectación</th>
-                                    <th>Prioridad</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reportesBody"></tbody>
-                        </table>
+                <!-- Formulario -->
+                <form id="reportForm" class="p-4">
+                    @csrf
+                    
+                    <!-- Paso 1: Tipo de Reporte -->
+                    <div class="step-content active" data-step="1">
+                        <h4 class="mb-2">¿Qué deseas reportar?</h4>
+                        <p class="text-muted mb-4">Selecciona el tipo de incidente que quieres reportar</p>
+                        
+                        <div class="alert alert-danger d-none" id="errorStep1"></div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4 col-sm-6">
+                                <div class="report-type-card" data-type="inundacion">
+                                    <div class="report-type-icon">💧</div>
+                                    <div class="report-type-name">Inundación</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="report-type-card" data-type="calle-bloqueada">
+                                    <div class="report-type-icon">🚧</div>
+                                    <div class="report-type-name">Calle Bloqueada</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="report-type-card" data-type="refugio-lleno">
+                                    <div class="report-type-icon">🏠</div>
+                                    <div class="report-type-name">Refugio Lleno</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="report-type-card" data-type="dano-infraestructura">
+                                    <div class="report-type-icon">⚠️</div>
+                                    <div class="report-type-name">Daño a Infraestructura</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="report-type-card" data-type="persona-riesgo">
+                                    <div class="report-type-icon">🆘</div>
+                                    <div class="report-type-name">Persona en Riesgo</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="report-type-card" data-type="otro">
+                                    <div class="report-type-icon">📝</div>
+                                    <div class="report-type-name">Otro</div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="tipo" id="inputTipo">
+                        <input type="hidden" name="nivel_afectacion" id="inputNivelAfectacion">
                     </div>
 
-                    <div id="noData" class="text-center py-5" style="display: none;">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Aún no has creado ningún reporte</p>
-                        <button class="btn btn-success mt-3" data-toggle="modal" data-target="#modalCrearReporte">
-                            <i class="fas fa-plus"></i> Crear mi primer reporte
-                        </button>
+                    <!-- Paso 2: Ubicación -->
+                    <div class="step-content" data-step="2">
+                        <h4 class="mb-2">Ubicación del incidente</h4>
+                        <p class="text-muted mb-4">Selecciona la ubicación donde ocurrió el incidente</p>
+                        
+                        <div class="alert alert-danger d-none" id="errorStep2"></div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="location-option-card" data-location="current">
+                                    <i class="fas fa-location-arrow fa-2x mb-3"></i>
+                                    <h5>Mi ubicación actual</h5>
+                                    <p class="text-muted mb-0">Usar mi ubicación GPS</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="location-option-card" data-location="map">
+                                    <i class="fas fa-map-marked-alt fa-2x mb-3"></i>
+                                    <h5>Seleccionar en mapa</h5>
+                                    <p class="text-muted mb-0">Elegir ubicación manualmente</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mapa (se muestra cuando se selecciona "map") -->
+                        <div id="mapContainer" class="d-none">
+                            <div id="reportMap" style="height: 400px; border-radius: 12px;"></div>
+                            <p class="text-muted mt-2">
+                                <i class="fas fa-info-circle"></i> Haz clic en el mapa para seleccionar la ubicación
+                            </p>
+                        </div>
+
+                        <!-- Coordenadas seleccionadas -->
+                        <div id="selectedLocation" class="alert alert-info d-none mt-3">
+                            <strong>Ubicación seleccionada:</strong><br>
+                            <span id="locationText"></span>
+                        </div>
+
+                        <input type="hidden" name="tipo_ubicacion" id="inputTipoUbicacion">
+                        <input type="hidden" name="latitud" id="inputLatitud">
+                        <input type="hidden" name="longitud" id="inputLongitud">
                     </div>
+
+                    <!-- Paso 3: Detalles -->
+                    <div class="step-content" data-step="3">
+                        <h4 class="mb-2">Detalles del incidente</h4>
+                        <p class="text-muted mb-4">Proporciona información detallada sobre el incidente</p>
+                        
+                        <div class="alert alert-danger d-none" id="errorStep3"></div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="inputTitulo">Título del reporte <span class="text-danger">*</span></label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="inputTitulo" 
+                                name="titulo" 
+                                maxlength="60"
+                                placeholder="Ej: Inundación en la Avenida Principal">
+                            <small class="form-text text-muted">
+                                <span id="tituloCount">0</span>/60 caracteres
+                            </small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="inputDescripcion">Descripción <span class="text-danger">*</span></label>
+                            <textarea 
+                                class="form-control" 
+                                id="inputDescripcion" 
+                                name="descripcion" 
+                                rows="5"
+                                maxlength="500"
+                                placeholder="Describe con detalle lo que está ocurriendo..."></textarea>
+                            <small class="form-text text-muted">
+                                <span id="descripcionCount">0</span>/500 caracteres
+                            </small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label>Nivel de urgencia</label>
+                            <div class="urgency-options">
+                                <div class="urgency-card" data-urgency="low">
+                                    <span class="urgency-emoji">🟢</span>
+                                    <span class="urgency-label">Baja</span>
+                                </div>
+                                <div class="urgency-card active" data-urgency="medium">
+                                    <span class="urgency-emoji">🟡</span>
+                                    <span class="urgency-label">Media</span>
+                                </div>
+                                <div class="urgency-card" data-urgency="high">
+                                    <span class="urgency-emoji">🔴</span>
+                                    <span class="urgency-label">Alta</span>
+                                </div>
+                            </div>
+                            <input type="hidden" name="urgencia" id="inputUrgencia" value="medium">
+                        </div>
+                    </div>
+
+                    <!-- Paso 4: Evidencia -->
+                    <div class="step-content" data-step="4">
+                        <h4 class="mb-2">Evidencia fotográfica</h4>
+                        <p class="text-muted mb-4">Agrega hasta 3 fotos del incidente (opcional)</p>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4" id="photoSlot1">
+                                <div class="photo-upload-card">
+                                    <i class="fas fa-camera fa-2x mb-2"></i>
+                                    <p class="mb-2">Agregar foto</p>
+                                    <input type="file" class="photo-input" accept="image/*" data-slot="1">
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="photoSlot2">
+                                <div class="photo-upload-card">
+                                    <i class="fas fa-camera fa-2x mb-2"></i>
+                                    <p class="mb-2">Agregar foto</p>
+                                    <input type="file" class="photo-input" accept="image/*" data-slot="2">
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="photoSlot3">
+                                <div class="photo-upload-card">
+                                    <i class="fas fa-camera fa-2x mb-2"></i>
+                                    <p class="mb-2">Agregar foto</p>
+                                    <input type="file" class="photo-input" accept="image/*" data-slot="3">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paso 5: Resumen -->
+                    <div class="step-content" data-step="5">
+                        <h4 class="mb-2">Confirma tu reporte</h4>
+                        <p class="text-muted mb-4">Revisa la información antes de enviar</p>
+                        
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="summary-item">
+                                    <strong>Tipo de incidente:</strong>
+                                    <span id="summaryTipo"></span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Ubicación:</strong>
+                                    <span id="summaryUbicacion"></span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Título:</strong>
+                                    <span id="summaryTitulo"></span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Urgencia:</strong>
+                                    <span id="summaryUrgencia"></span>
+                                </div>
+                                <div class="summary-item">
+                                    <strong>Fotos adjuntas:</strong>
+                                    <span id="summaryFotos"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Botones de navegación -->
+            <div class="card-footer bg-white border-top">
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" id="btnPrevious" style="display: none;">
+                        <i class="fas fa-arrow-left"></i> Anterior
+                    </button>
+                    <button type="button" class="btn btn-primary ml-auto" id="btnNext">
+                        Siguiente <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Crear Reporte -->
-<div class="modal fade" id="modalCrearReporte">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form id="formCrearReporte">
-                <div class="modal-header bg-success">
-                    <h5 class="modal-title">Reportar Inundación</h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+<!-- Modal de éxito -->
+<div class="modal fade" id="modalExito" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-body text-center p-5">
+                <div class="success-checkmark mb-4">
+                    <i class="fas fa-check-circle fa-5x text-success"></i>
                 </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Calle Principal *</label>
-                                <input type="text" name="calle_principal" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Entre calles (opcional)</label>
-                                <input type="text" name="cruzamiento1" class="form-control" placeholder="Calle 1">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <input type="text" name="cruzamiento2" class="form-control" placeholder="Calle 2">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Colonia *</label>
-                                <input type="text" name="colonia" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Nivel de Afectación *</label>
-                                <select name="nivel_afectacion" class="form-control" required>
-                                    <option value="">Seleccionar...</option>
-                                    <option value="Leve">Leve (agua en calle)</option>
-                                    <option value="Moderada">Moderada (ingreso a viviendas)</option>
-                                    <option value="Severa">Severa (imposible transitar)</option>
-                                    <option value="Crítica">Crítica (personas atrapadas)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Prioridad (según tu percepción)</label>
-                                <select name="prioridad" class="form-control">
-                                    <option value="3">Baja</option>
-                                    <option value="2" selected>Media</option>
-                                    <option value="1">Alta</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label>Descripción detallada (opcional)</label>
-                                <textarea name="descripcion" class="form-control" rows="3" placeholder="Ej: El agua llega a las rodillas, hay vehículos varados..."></textarea>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <p class="text-muted"><small>
-                                <i class="fas fa-info-circle"></i> 
-                                Para desarrollo: Usaremos coordenadas de prueba para agilizar el proceso
-                            </small></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-paper-plane"></i> Enviar Reporte
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para ver detalles del reporte -->
-<div class="modal fade" id="modalDetallesReporte" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info">
-                <h5 class="modal-title">Detalles del Reporte</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+                <h4 class="mb-3">¡Reporte enviado con éxito!</h4>
+                <p class="text-muted mb-4">Tu reporte ha sido registrado y será atendido a la brevedad.</p>
+                <button type="button" class="btn btn-primary" onclick="window.location.href='{{ route('reportes.index') }}'">
+                    Ver mis reportes
                 </button>
-            </div>
-            <div class="modal-body" id="detallesReporteBody">
-                <!-- Aquí se cargarán los detalles -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
 </div>
 @endsection
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    const API_GET_URL = '/api/reportes-inundaciones';
-    const API_POST_URL = '/api/reportes-inundaciones';
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    /* Stepper Styles */
+    .stepper-header {
+        position: relative;
+    }
     
-    // ⚡ COORDENADAS POR DEFECTO PARA DESARROLLO (Mérida centro)
-    const COORDENADAS_DEFAULT = { 
-        lat: 20.967370, 
-        lng: -89.623678,
-        fuente: 'desarrollo'
-    };
-
-    document.addEventListener('DOMContentLoaded', function() {
-        cargarReportes();
-    });
-
-    function cargarReportes() {
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('tablaReportes').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-
-        fetch(API_GET_URL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
-                }
-                return response.json();
-            })
-            .then(res => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('tablaReportes').style.display = 'block';
-
-                const reportes = res.data || res;
-
-                if (!reportes || reportes.length === 0) {
-                    document.getElementById('noData').style.display = 'block';
-                    document.getElementById('reportesBody').innerHTML = '';
-                    return;
-                }
-
-                document.getElementById('noData').style.display = 'none';
-                mostrarReportes(reportes);
-            })
-            .catch(err => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('errorMessage').textContent = 'Error al cargar tus reportes: ' + err.message;
-                console.error('Error:', err);
-            });
+    .stepper-progress-container {
+        padding: 20px 0;
+    }
+    
+    .stepper-track {
+        position: absolute;
+        top: 50%;
+        left: 16px;
+        right: 16px;
+        height: 2px;
+        background: #E2E8F0;
+        transform: translateY(-50%);
+        z-index: 0;
+    }
+    
+    .stepper-progress {
+        position: absolute;
+        top: 50%;
+        left: 16px;
+        height: 2px;
+        background: linear-gradient(90deg, #0891B2, #06B6D4);
+        transform: translateY(-50%);
+        transition: width 0.3s ease;
+        z-index: 1;
+        width: 0%;
+    }
+    
+    .stepper-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .stepper-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .stepper-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid #E2E8F0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .stepper-number {
+        font-size: 14px;
+        color: #94A3B8;
+        transition: color 0.3s ease;
+    }
+    
+    .stepper-check {
+        display: none;
+        color: white;
+        font-size: 14px;
+    }
+    
+    .stepper-label {
+        margin-top: 8px;
+        font-size: 11px;
+        color: #94A3B8;
+        transition: color 0.3s ease;
+    }
+    
+    .stepper-step.active .stepper-circle {
+        background: #0891B2;
+        border-color: #0891B2;
+    }
+    
+    .stepper-step.active .stepper-number {
+        color: white;
+    }
+    
+    .stepper-step.active .stepper-label {
+        color: #0891B2;
+    }
+    
+    .stepper-step.completed .stepper-circle {
+        background: #10B981;
+        border-color: #10B981;
+    }
+    
+    .stepper-step.completed .stepper-number {
+        display: none;
+    }
+    
+    .stepper-step.completed .stepper-check {
+        display: block;
     }
 
-    function mostrarReportes(reportes) {
-        const tbody = document.getElementById('reportesBody');
-        tbody.innerHTML = '';
-
-        reportes.forEach(r => {
-            const prioridadBadge = r.prioridad == 1 ? 'badge-danger' : r.prioridad == 2 ? 'badge-warning' : 'badge-success';
-            const prioridadTexto = r.prioridad == 1 ? 'Alta' : r.prioridad == 2 ? 'Media' : 'Baja';
-
-            const estadoBadge = r.estado_reporte?.nombre?.toLowerCase().includes('pendiente') ? 'badge-warning' :
-                               r.estado_reporte?.nombre?.toLowerCase().includes('verificado') ? 'badge-success' :
-                               r.estado_reporte?.nombre?.toLowerCase().includes('rechazado') ? 'badge-danger' : 'badge-info';
-
-            const ubicacion = [r.calle_principal, r.colonia].filter(Boolean).join(', ') || 'Sin ubicación';
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>#${r.id_reporte}</td>
-                <td>${new Date(r.fecha_suceso || r.created_at).toLocaleString('es-MX')}</td>
-                <td>${ubicacion}</td>
-                <td>${r.nivel_afectacion || 'No especificado'}</td>
-                <td><span class="badge ${prioridadBadge}">${prioridadTexto}</span></td>
-                <td><span class="badge ${estadoBadge}">${r.estado_reporte?.nombre || 'Pendiente'}</span></td>
-                <td>
-                    <button class="btn btn-info btn-sm" onclick="verDetalle(${r.id_reporte})">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+    /* Step Content */
+    .step-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .step-content.active {
+        display: block;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
     }
 
-    // ⚡ IMPLEMENTACIÓN OPTIMIZADA - MÁS RÁPIDA
-    document.getElementById('formCrearReporte').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const calle = this.querySelector('[name="calle_principal"]').value;
-        const colonia = this.querySelector('[name="colonia"]').value;
-        
-        if (!calle || !colonia) {
-            Swal.fire('Error', 'Por favor ingresa calle principal y colonia', 'error');
-            return;
-        }
-
-        // Mostrar loading inmediatamente
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-        submitBtn.disabled = true;
-
-        // ⚡ ESTRATEGIA RÁPIDA: Usar coordenadas por defecto inmediatamente
-        // Para desarrollo, comentar esta línea si quieres usar geolocalización real
-        usarCoordenadasRapidas(calle, colonia, this, submitBtn, originalText);
-        
-        // ⚡ Para producción, descomenta esta línea:
-        // obtenerUbicacionOptimizada(calle, colonia, this, submitBtn, originalText);
-    });
-
-    // ⚡ MÉTODO RÁPIDO: Coordenadas por defecto (instantáneo)
-    function usarCoordenadasRapidas(calle, colonia, form, submitBtn, originalText) {
-        console.log('⚡ Usando coordenadas rápidas para desarrollo');
-        
-        // Pequeño delay para simular procesamiento (opcional)
-        setTimeout(() => {
-            enviarReporteConCoordenadas(COORDENADAS_DEFAULT, form, submitBtn, originalText);
-        }, 500);
+    /* Report Type Cards */
+    .report-type-card {
+        background: white;
+        border: 2px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .report-type-card:hover {
+        border-color: #0891B2;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.15);
+    }
+    
+    .report-type-card.selected {
+        background: #F0FDFA;
+        border-color: #0891B2;
+        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.15);
+    }
+    
+    .report-type-icon {
+        font-size: 36px;
+        margin-bottom: 12px;
+    }
+    
+    .report-type-card.selected .report-type-icon {
+        background: linear-gradient(135deg, #0891B2, #06B6D4);
+        padding: 12px;
+        border-radius: 12px;
+    }
+    
+    .report-type-name {
+        font-weight: 600;
+        color: #334155;
     }
 
-    // ⚡ MÉTODO OPTIMIZADO: Para producción
-    function obtenerUbicacionOptimizada(calle, colonia, form, submitBtn, originalText) {
-        // Intentar geolocalización RÁPIDA primero
-        obtenerUbicacionRapida()
-            .then(position => {
-                enviarReporteConCoordenadas({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    fuente: 'geolocalización'
-                }, form, submitBtn, originalText);
-            })
-            .catch(() => {
-                // Si falla, usar geocoding con timeout
-                geocodeAddressRapido(calle + ', ' + colonia, form, submitBtn, originalText);
-            });
+    /* Location Cards */
+    .location-option-card {
+        background: white;
+        border: 2px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .location-option-card:hover {
+        border-color: #0891B2;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.15);
+    }
+    
+    .location-option-card.selected {
+        background: #F0FDFA;
+        border-color: #0891B2;
+        box-shadow: 0 4px 12px rgba(8, 145, 178, 0.15);
+    }
+    
+    .location-option-card i {
+        color: #64748B;
+        transition: color 0.3s ease;
+    }
+    
+    .location-option-card.selected i {
+        color: #0891B2;
     }
 
-    // ⚡ GEOLOCALIZACIÓN RÁPIDA
-    function obtenerUbicacionRapida() {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('Geolocalización no soportada'));
-                return;
-            }
-
-            // ⚡ Configuración rápida
-            const options = {
-                timeout: 3000,           // Solo 3 segundos
-                maximumAge: 300000,      // Cache de 5 minutos
-                enableHighAccuracy: false // Más rápido
-            };
-
-            navigator.geolocation.getCurrentPosition(resolve, reject, options);
-        });
+    /* Urgency Cards */
+    .urgency-options {
+        display: flex;
+        gap: 12px;
+    }
+    
+    .urgency-card {
+        flex: 1;
+        background: white;
+        border: 2px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .urgency-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .urgency-card.active {
+        background: #F0FDFA;
+        border-color: #0891B2;
+    }
+    
+    .urgency-emoji {
+        font-size: 32px;
+        display: block;
+        margin-bottom: 8px;
+    }
+    
+    .urgency-label {
+        font-weight: 600;
+        color: #334155;
     }
 
-    // ⚡ GEOCODING RÁPIDO CON TIMEOUT
-    function geocodeAddressRapido(direccion, form, submitBtn, originalText) {
-        const loadingAlert = Swal.fire({
-            title: 'Buscando ubicación...',
-            html: `
-                <div class="text-center">
-                    <div class="spinner-border text-primary mb-3"></div>
-                    <p class="mb-1"><strong>${direccion}</strong></p>
-                    <small class="text-muted">Usando servicio de mapas</small>
-                </div>
-            `,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            timer: 5000 // Auto-cierre en 5 segundos
-        });
-
-        // ⚡ Timeout más corto
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Tiempo agotado')), 5000)
-        );
-
-        const geocodingPromise = fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion + ', Yucatán, México')}&limit=1`
-        ).then(response => response.json());
-
-        Promise.race([geocodingPromise, timeoutPromise])
-            .then(data => {
-                loadingAlert.then(alert => alert.close());
-                
-                if (data && data.length > 0) {
-                    enviarReporteConCoordenadas({
-                        lat: parseFloat(data[0].lat),
-                        lng: parseFloat(data[0].lon),
-                        fuente: 'geocoding'
-                    }, form, submitBtn, originalText);
-                } else {
-                    // ⚡ Fallback a coordenadas por defecto
-                    console.log('Geocoding falló, usando coordenadas por defecto');
-                    enviarReporteConCoordenadas(COORDENADAS_DEFAULT, form, submitBtn, originalText);
-                }
-            })
-            .catch(error => {
-                loadingAlert.then(alert => alert.close());
-                console.log('Error en geocoding:', error);
-                // ⚡ Fallback a coordenadas por defecto
-                enviarReporteConCoordenadas(COORDENADAS_DEFAULT, form, submitBtn, originalText);
-            });
+    /* Photo Upload Cards */
+    .photo-upload-card {
+        background: white;
+        border: 2px dashed #E2E8F0;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .photo-upload-card:hover {
+        border-color: #0891B2;
+        background: #F8FAFC;
+    }
+    
+    .photo-upload-card i {
+        color: #94A3B8;
+    }
+    
+    .photo-upload-card.has-photo {
+        border-style: solid;
+        border-color: #10B981;
+        padding: 0;
+    }
+    
+    .photo-upload-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+    
+    .photo-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .photo-remove {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
     }
 
-    // ⚡ FUNCIÓN PARA ENVIAR REPORTE (optimizada)
-    function enviarReporteConCoordenadas(coords, form, submitBtn, originalText) {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-        
-        const formData = new FormData(form);
-        formData.append('latitud', coords.lat);
-        formData.append('longitud', coords.lng);
-        formData.append('metodo_origen', 'web_usuario');
-        formData.append('fuente_ubicacion', coords.fuente);
-        formData.append('estado_reporte_id', 1);
-
-        fetch(API_POST_URL, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error en el servidor: ' + response.status);
-            }
-            return response.json();
-        })
-        .then(res => {
-            // Restaurar botón
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-
-            if (res.success) {
-                $('#modalCrearReporte').modal('hide');
-                form.reset();
-                cargarReportes();
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Reporte enviado!',
-                    text: `Ubicación obtenida por: ${coords.fuente}`,
-                    confirmButtonText: 'Aceptar',
-                    timer: 3000
-                });
-            } else {
-                Swal.fire('Error', res.message || 'No se pudo enviar el reporte', 'error');
-            }
-        })
-        .catch((error) => {
-            // Restaurar botón
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            
-            console.error('Error:', error);
-            Swal.fire('Error', 'Error de conexión: ' + error.message, 'error');
-        });
+    /* Summary */
+    .summary-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #E2E8F0;
     }
-
-        // Función para ver detalles de un reporte en modal
-    function verDetalle(id) {
-        fetch(`${API_GET_URL}/${id}`)
-            .then(response => {
-                if (!response.ok) throw new Error('Error al cargar el reporte');
-                return response.json();
-            })
-            .then(res => {
-                const reporte = res.data || res;
-                
-                // Formatear fecha
-                const fecha = reporte.fecha_suceso || reporte.created_at;
-                const fechaFormateada = new Date(fecha).toLocaleString('es-MX');
-                
-                // Estado del reporte
-                const estado = reporte.estado_reporte?.nombre || 'Pendiente';
-                let estadoBadge = 'badge-info';
-                if (estado.toLowerCase().includes('pendiente')) estadoBadge = 'badge-warning';
-                else if (estado.toLowerCase().includes('verificado')) estadoBadge = 'badge-success';
-                else if (estado.toLowerCase().includes('rechazado')) estadoBadge = 'badge-danger';
-                
-                // Nivel de afectación
-                const nivel = reporte.nivel_afectacion || 'No especificado';
-                
-                // Prioridad
-                const prioridadTexto = reporte.prioridad == 1 ? 'Alta' : 
-                                    reporte.prioridad == 2 ? 'Media' : 'Baja';
-                const prioridadBadge = reporte.prioridad == 1 ? 'badge-danger' : 
-                                    reporte.prioridad == 2 ? 'badge-warning' : 'badge-success';
-                
-                // Ubicación
-                const ubicacion = [reporte.calle_principal, reporte.colonia].filter(Boolean).join(', ') || 'Sin ubicación';
-                
-                // Coordenadas
-                const coordenadas = reporte.latitud && reporte.longitud ? 
-                    `<p><strong>Coordenadas:</strong> ${reporte.latitud}, ${reporte.longitud}</p>
-                    <a href="https://www.google.com/maps?q=${reporte.latitud},${reporte.longitud}" 
-                        target="_blank" class="btn btn-sm btn-success">
-                        <i class="fas fa-map-marker-alt"></i> Ver en Google Maps
-                    </a>` : '';
-                
-                document.getElementById('detallesReporteBody').innerHTML = `
-                    <div class="row">
-                        <div class="col-12">
-                            <h5>Reporte #${reporte.id_reporte}</h5>
-                            <hr>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Fecha:</strong> ${fechaFormateada}</p>
-                            <p><strong>Ubicación:</strong> ${ubicacion}</p>
-                            <p><strong>Nivel Afectación:</strong> ${nivel}</p>
-                            <p><strong>Prioridad:</strong> <span class="badge ${prioridadBadge}">${prioridadTexto}</span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Estado:</strong> <span class="badge ${estadoBadge}">${estado}</span></p>
-                            <p><strong>Método Origen:</strong> ${reporte.metodo_origen || 'N/A'}</p>
-                            <p><strong>Fuente Ubicación:</strong> ${reporte.fuente_ubicacion || 'N/A'}</p>
-                        </div>
-                        <div class="col-12 mt-3">
-                            <p><strong>Descripción:</strong></p>
-                            <p>${reporte.descripcion || '<em>Sin descripción</em>'}</p>
-                        </div>
-                        ${coordenadas}
-                    </div>
-                `;
-                $('#modalDetallesReporte').modal('show');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('Error', 'No se pudieron cargar los detalles del reporte', 'error');
-            });
+    
+    .summary-item:last-child {
+        border-bottom: none;
     }
+    
+    .summary-item strong {
+        display: inline-block;
+        min-width: 150px;
+        color: #64748B;
+    }
+</style>
+@endpush
 
-    console.log('🔧 Modo: DESARROLLO - Usando coordenadas rápidas');
-    console.log('📍 Coordenadas por defecto:', COORDENADAS_DEFAULT);
-    console.log('💡 Para producción, cambiar a obtenerUbicacionOptimizada()');
-</script>
+@push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ asset('js/reportes-form.js') }}"></script>
 @endpush

@@ -35,9 +35,11 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/mis-reportes', [ReporteInundacionController::class, 'index'])->name('reportes.index');
+    Route::get('/mis-reportes/ver', [ReporteInundacionController::class, 'verReportes'])->name('reportes.verReportes'); // 👈 NUEVA RUTA
     Route::get('/mis-reportes/crear', [ReporteInundacionController::class, 'create'])->name('reportes.create');
     Route::post('/mis-reportes', [ReporteInundacionController::class, 'store'])->name('reportes.store');
     Route::get('/mis-reportes/{id}', [ReporteInundacionController::class, 'show'])->name('reportes.show');
+  
     
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });

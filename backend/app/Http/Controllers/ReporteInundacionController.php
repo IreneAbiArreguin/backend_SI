@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use App\Models\ReporteInundacion; 
 class ReporteInundacionController extends Controller
 {
     public function index()
@@ -30,5 +30,9 @@ class ReporteInundacionController extends Controller
         $reporte = ReporteInundacion::with(['usuario', 'municipio', 'estado', 'verificadoPor'])
             ->findOrFail($id);
         return $this->success($reporte);
+    }
+        public function verReportes()   // NUEVO MÉTODO
+    {
+        return view('reportes.verReportes');
     }
 }
