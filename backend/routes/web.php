@@ -40,7 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/mis-reportes', [ReporteInundacionController::class, 'store'])->name('reportes.store');
     Route::get('/mis-reportes/{id}', [ReporteInundacionController::class, 'show'])->name('reportes.show');
   
-    
+
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 

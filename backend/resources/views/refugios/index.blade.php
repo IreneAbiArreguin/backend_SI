@@ -26,7 +26,7 @@
                 <!-- Loading spinner -->
                 <div id="loading" class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Cargando...</span>
+                        <span class="visually-hidden">Cargando...</span>
                     </div>
                     <p class="mt-2">Cargando refugios...</p>
                 </div>
@@ -73,20 +73,18 @@
 </div>
 
 <!-- Modal para ver detalles -->
-<div class="modal fade" id="modalDetalles" tabindex="-1">
+<div class="modal fade" id="modalDetalles" tabindex="-1" aria-labelledby="modalDetallesLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-info">
-                <h5 class="modal-title">Detalles del Refugio</h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="modalDetallesLabel">Detalles del Refugio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body" id="detallesBody">
                 <!-- Detalles se cargarán aquí -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -101,11 +99,11 @@
     // Cargar refugios al iniciar la página
     document.addEventListener('DOMContentLoaded', function() {
         cargarRefugios();
-    });
-
-    // Botón recargar
-    document.getElementById('recargarRefugios').addEventListener('click', function() {
-        cargarRefugios();
+        
+        // Botón recargar
+        document.getElementById('recargarRefugios').addEventListener('click', function() {
+            cargarRefugios();
+        });
     });
 
     // Función para cargar refugios desde la API
@@ -114,36 +112,38 @@
         document.getElementById('error').style.display = 'none';
         document.getElementById('tablaRefugios').style.display = 'none';
 
-        fetch(API_URL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error al cargar los datos');
-                }
-                return response.json();
-            })
-            .then(response => {
-                // Ocultar loading
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('tablaRefugios').style.display = 'block';
+        fetch(API_URL, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la red: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('tablaRefugios').style.display = 'block';
 
-                // Tu API devuelve {success: true, data: [...]}
-                const refugios = response.data || response;
+            // Asumimos que la API devuelve un array directo
+            const refugios = Array.isArray(data) ? data : (data.data || []);
 
-                // Verificar si hay datos
-                if (!refugios || refugios.length === 0) {
-                    document.getElementById('noData').style.display = 'block';
-                    document.getElementById('refugiosBody').innerHTML = '';
-                } else {
-                    document.getElementById('noData').style.display = 'none';
-                    mostrarRefugios(refugios);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('errorMessage').textContent = 'No se pudieron cargar los refugios. ' + error.message;
-            });
+            if (!refugios || refugios.length === 0) {
+                document.getElementById('noData').style.display = 'block';
+                document.getElementById('refugiosBody').innerHTML = '';
+            } else {
+                document.getElementById('noData').style.display = 'none';
+                mostrarRefugios(refugios);
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar refugios:', error);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('errorMessage').textContent = 'No se pudieron cargar los refugios. ' + (error.message || '');
+        });
     }
 
     // Función para mostrar refugios en la tabla
@@ -152,40 +152,35 @@
         tbody.innerHTML = '';
 
         refugios.forEach(refugio => {
-            const tr = document.createElement('tr');
-            
-            // Calcular disponible
             const disponible = refugio.capacidad_total - (refugio.capacidad_actual || 0);
+            const estadoCodigo = (refugio.estado?.codigo || 'Desconocido').toLowerCase();
             
-            // Badge para estado - usa 'codigo' en lugar de 'nombre'
-            const estadoCodigo = refugio.estado?.codigo || 'Desconocido';
-            
-            // Badge según el código del estado
             let estadoBadge = '';
-            switch(estadoCodigo.toLowerCase()) {
+            switch(estadoCodigo) {
                 case 'disponible':
-                    estadoBadge = `<span class="badge badge-success">${estadoCodigo}</span>`;
+                    estadoBadge = `<span class="badge bg-success">${refugio.estado.codigo}</span>`;
                     break;
                 case 'ocupado':
-                    estadoBadge = `<span class="badge badge-warning">${estadoCodigo}</span>`;
+                    estadoBadge = `<span class="badge bg-warning text-dark">${refugio.estado.codigo}</span>`;
                     break;
                 case 'lleno':
-                    estadoBadge = `<span class="badge badge-danger">${estadoCodigo}</span>`;
+                    estadoBadge = `<span class="badge bg-danger">${refugio.estado.codigo}</span>`;
                     break;
                 case 'cerrado':
                 case 'mantenimiento':
-                    estadoBadge = `<span class="badge badge-secondary">${estadoCodigo}</span>`;
+                    estadoBadge = `<span class="badge bg-secondary">${refugio.estado.codigo}</span>`;
                     break;
                 default:
-                    estadoBadge = `<span class="badge badge-info">${estadoCodigo}</span>`;
+                    estadoBadge = `<span class="badge bg-info">${refugio.estado.codigo || 'N/A'}</span>`;
             }
 
+            const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${refugio.id_refugio}</td>
-                <td><strong>${refugio.nombre}</strong></td>
-                <td>${refugio.direccion}</td>
-                <td>${refugio.capacidad_total}</td>
-                <td>${disponible}</td>
+                <td>${refugio.id_refugio || ''}</td>
+                <td><strong>${refugio.nombre || 'Sin nombre'}</strong></td>
+                <td>${refugio.direccion || 'Sin dirección'}</td>
+                <td>${refugio.capacidad_total || 0}</td>
+                <td>${disponible >= 0 ? disponible : 'N/A'}</td>
                 <td>${refugio.telefono_contacto || 'N/A'}</td>
                 <td>${estadoBadge}</td>
                 <td>
@@ -194,100 +189,121 @@
                     </button>
                 </td>
             `;
-            
             tbody.appendChild(tr);
         });
     }
 
     // Función para ver detalles de un refugio
     function verDetalles(id) {
-        fetch(`${API_URL}/${id}`)
-            .then(response => response.json())
-            .then(response => {
-                const refugio = response.data || response;
-                const detallesBody = document.getElementById('detallesBody');
-                
-                const disponible = refugio.capacidad_total - (refugio.capacidad_actual || 0);
-                const municipio = refugio.municipio?.nombre || 'N/A';
-                
-                // CORREGIDO: usa 'codigo' y 'descripcion'
-                const estadoCodigo = refugio.estado?.codigo || 'N/A';
-                const estadoDescripcion = refugio.estado?.descripcion || '';
-                
-                // Badge según el código del estado
-                let estadoBadgeClass = 'badge-info';
-                switch(estadoCodigo.toLowerCase()) {
-                    case 'disponible':
-                        estadoBadgeClass = 'badge-success';
-                        break;
-                    case 'ocupado':
-                        estadoBadgeClass = 'badge-warning';
-                        break;
-                    case 'lleno':
-                        estadoBadgeClass = 'badge-danger';
-                        break;
-                    case 'cerrado':
-                    case 'mantenimiento':
-                        estadoBadgeClass = 'badge-secondary';
-                        break;
-                }
-                
-                // Mostrar servicios
-                let serviciosHTML = '';
-                if (refugio.servicios && refugio.servicios.length > 0) {
-                    serviciosHTML = `
-                        <div class="col-12 mt-3">
-                            <p><strong>Servicios:</strong></p>
-                            <ul>
-                                ${refugio.servicios.map(s => `
-                                    <li>
-                                        ${s.nombre}
-                                        ${s.pivot?.disponible ? '<span class="badge badge-success badge-sm ml-2">Disponible</span>' : '<span class="badge badge-secondary badge-sm ml-2">No disponible</span>'}
-                                    </li>
-                                `).join('')}
-                            </ul>
-                        </div>
-                    `;
-                }
-                
-                detallesBody.innerHTML = `
-                    <div class="row">
-                        <div class="col-12">
-                            <h5>${refugio.nombre}</h5>
-                            <hr>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Dirección:</strong><br>${refugio.direccion}</p>
-                            <p><strong>Municipio:</strong> ${municipio}</p>
-                            <p><strong>Teléfono:</strong> ${refugio.telefono_contacto || 'N/A'}</p>
-                            <p><strong>Responsable:</strong> ${refugio.responsable || 'N/A'}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Capacidad Total:</strong> ${refugio.capacidad_total}</p>
-                            <p><strong>Capacidad Actual:</strong> ${refugio.capacidad_actual || 0}</p>
-                            <p><strong>Disponible:</strong> ${disponible}</p>
-                            <p><strong>Estado:</strong> <span class="badge ${estadoBadgeClass}">${estadoCodigo}</span></p>
-                            ${estadoDescripcion ? `<small class="text-muted">${estadoDescripcion}</small>` : ''}
-                        </div>
-                        ${serviciosHTML}
-                        ${refugio.latitud && refugio.longitud ? `
-                            <div class="col-12 mt-3">
-                                <p><strong>Coordenadas:</strong></p>
-                                <p>Lat: ${refugio.latitud}, Lng: ${refugio.longitud}</p>
-                                <a href="https://www.google.com/maps?q=${refugio.latitud},${refugio.longitud}" 
-                                   target="_blank" class="btn btn-sm btn-success">
-                                    <i class="fas fa-map-marker-alt"></i> Ver en Google Maps
-                                </a>
-                            </div>
-                        ` : ''}
+        if (!id) {
+            alert('ID de refugio no válido');
+            return;
+        }
+
+        fetch(`${API_URL}/${id}`, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Refugio no encontrado');
+            }
+            return response.json();
+        })
+        .then(refugio => {
+            const disponible = refugio.capacidad_total - (refugio.capacidad_actual || 0);
+            const municipio = refugio.municipio?.nombre || 'N/A';
+            const estadoCodigo = refugio.estado?.codigo || 'N/A';
+            const estadoDescripcion = refugio.estado?.descripcion || '';
+
+            // Badge para estado
+            let estadoBadgeClass = 'bg-info';
+            switch(estadoCodigo.toLowerCase()) {
+                case 'disponible':
+                    estadoBadgeClass = 'bg-success';
+                    break;
+                case 'ocupado':
+                    estadoBadgeClass = 'bg-warning text-dark';
+                    break;
+                case 'lleno':
+                    estadoBadgeClass = 'bg-danger';
+                    break;
+                case 'cerrado':
+                case 'mantenimiento':
+                    estadoBadgeClass = 'bg-secondary';
+                    break;
+            }
+
+            // Servicios
+            let serviciosHTML = '';
+            if (refugio.servicios && refugio.servicios.length > 0) {
+                serviciosHTML = `
+                    <div class="col-12 mt-3">
+                        <p><strong>Servicios:</strong></p>
+                        <ul class="mb-0">
+                            ${refugio.servicios.map(s => `
+                                <li>
+                                    ${s.nombre || 'Servicio'}
+                                    ${s.pivot?.disponible ? '<span class="badge bg-success ms-2">Disponible</span>' : '<span class="badge bg-secondary ms-2">No disponible</span>'}
+                                </li>
+                            `).join('')}
+                        </ul>
                     </div>
                 `;
-                $('#modalDetalles').modal('show');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('No se pudieron cargar los detalles del refugio');
-            });
+            }
+
+            // Coordenadas
+            const coordenadasHTML = refugio.latitud && refugio.longitud ? `
+                <div class="col-12 mt-3">
+                    <p><strong>Coordenadas:</strong></p>
+                    <p>Lat: ${refugio.latitud}, Lng: ${refugio.longitud}</p>
+                    <a href="https://www.google.com/maps?q=${refugio.latitud},${refugio.longitud}" 
+                       target="_blank" class="btn btn-sm btn-success">
+                        <i class="fas fa-map-marker-alt"></i> Ver en Google Maps
+                    </a>
+                </div>
+            ` : '';
+
+            document.getElementById('detallesBody').innerHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <h5>${refugio.nombre || 'Refugio'}</h5>
+                        <hr>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Dirección:</strong><br>${refugio.direccion || 'Sin dirección'}</p>
+                        <p><strong>Municipio:</strong> ${municipio}</p>
+                        <p><strong>Teléfono:</strong> ${refugio.telefono_contacto || 'N/A'}</p>
+                        <p><strong>Responsable:</strong> ${refugio.responsable || 'N/A'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Capacidad Total:</strong> ${refugio.capacidad_total || 0}</p>
+                        <p><strong>Capacidad Actual:</strong> ${refugio.capacidad_actual || 0}</p>
+                        <p><strong>Disponible:</strong> ${disponible >= 0 ? disponible : 'N/A'}</p>
+                        <p><strong>Estado:</strong> <span class="badge ${estadoBadgeClass}">${estadoCodigo}</span></p>
+                        ${estadoDescripcion ? `<p class="text-muted small mb-0">${estadoDescripcion}</p>` : ''}
+                    </div>
+                    ${serviciosHTML}
+                    ${coordenadasHTML}
+                </div>
+            `;
+
+            // ✅ ABRIR MODAL CON BOOTSTRAP 5 (SIN JQUERY)
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error al cargar detalles:', error);
+            document.getElementById('detallesBody').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error al cargar los detalles: ${error.message || 'Desconocido'}
+                </div>
+            `;
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
+            modal.show();
+        });
     }
 </script>
 @endpush

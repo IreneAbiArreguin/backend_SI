@@ -25,13 +25,18 @@ class ReporteInundacionController extends Controller
         return redirect()->route('reportes.index');
     }
 
-    public function show($id)
-    {
-        $reporte = ReporteInundacion::with(['usuario', 'municipio', 'estado', 'verificadoPor'])
-            ->findOrFail($id);
-        return $this->success($reporte);
-    }
-        public function verReportes()   // NUEVO MÉTODO
+   public function show($id)
+{
+    $reporte = ReporteInundacion::with(['usuario', 'municipio', 'estado', 'verificadoPor'])
+        ->findOrFail($id);
+
+    return response()->json([
+        'success' => true,
+        'data' => $reporte
+    ]);
+}
+
+        public function verReportes()   
     {
         return view('reportes.verReportes');
     }
